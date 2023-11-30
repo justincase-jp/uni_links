@@ -49,30 +49,40 @@ static id _instance;
 
 - (BOOL)application:(UIApplication *)application
     didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-  NSURL *url = (NSURL *)launchOptions[UIApplicationLaunchOptionsURLKey];
-  self.initialLink = [url absoluteString];
-  self.latestLink = self.initialLink;
-  return YES;
+
+    NSURL *url = [launchOptions valueForKey:UIApplicationLaunchOptionsURLKey];
+    if (url) {
+        self.initialLink = [url absoluteString];
+    }
+    NSDictionary *activityDictionary = [launchOptions objectForKey:UIApplicationLaunchOptionsUserActivityDictionaryKey];
+    if (activityDictionary) {
+        NSUserActivity *userActivity = [activityDictionary objectForKey:@"UIApplicationLaunchOptionsUserActivityKey"];
+        if(userActivity) {
+            self.initialLink = [userActivity.webpageURL absoluteString];
+        }
+    }
+    self.latestLink = self.initialLink;
+    return YES;
 }
 
-- (BOOL)application:(UIApplication *)application
-            openURL:(NSURL *)url
-            options:(NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
-  self.latestLink = [url absoluteString];
-  return YES;
+- (BOOL)application:(UIApplication *)app
+    openURL:(NSURL *)url
+    options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
+    self.latestLink = [url absoluteString];
+    return YES;
 }
 
 - (BOOL)application:(UIApplication *)application
     continueUserActivity:(NSUserActivity *)userActivity
-      restorationHandler:(void (^)(NSArray *_Nullable))restorationHandler {
-  if ([userActivity.activityType isEqualToString:NSUserActivityTypeBrowsingWeb]) {
-    self.latestLink = [userActivity.webpageURL absoluteString];
-    if (!_eventSink) {
-      self.initialLink = self.latestLink;
+    restorationHandler:(void (^)(NSArray<id<UIUserActivityRestoring>> * _Nullable))restorationHandler {
+    if ([userActivity.activityType isEqualToString:NSUserActivityTypeBrowsingWeb]) {
+        self.latestLink = [userActivity.webpageURL absoluteString];
+        if(!self.initialLink) {
+            self.initialLink = self.latestLink;
+        }
+        return YES;
     }
-    return YES;
-  }
-  return NO;
+    return NO;
 }
 
 - (void)handleMethodCall:(FlutterMethodCall *)call result:(FlutterResult)result {
